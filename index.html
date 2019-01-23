@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html data-ng-app="app" data-ng-controller="main">
+
+<head>
+    <title data-ng-bind="'Challonge Utility V.' + viewModel.version">Challonge Utility</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+
+    <script src="./out/app.js"></script>
+</head>
+
+<body data-ng-paste="viewModel.paste($event)">
+    <div class="info">
+        Chrome only, no jQuery, ES6.
+    </div>
+    <div class="controls" data-ng-cloak>
+        <util-expander is-open-storage-key="players">
+            <expander-header>
+                <h1>Players
+                    <util-info-button>
+                        In this section players can be entered and seeded.<br/>
+                        <br/>
+                        For reuse the list can be saved in the browser as the default or as file and the checkboxes can be used to filter the attending players so there is no need to remove and re-add frequently attending players every time.<br/>
+                        Check the tooltip on the player name input for keyboard controls.<br/>
+                        <br/>
+                        The results list can be re-ordered to make final adjustments, though these changes are lost if the list or the seeding settings are changed. See the info of the results list for more details.<br/>
+                        <br/>
+                        Paste anywhere to import a new-line-separated list of players.
+                    </util-info-button>
+                </h1>
+            </expander-header>
+            <expander-body>
+                <div class="flex-container flex-wrap-800">
+                    <div class="flex-star" style="flex-basis: 50%; padding: 10px">
+                        <h2>
+                            Players by Seed 
+                            <a href="{{ viewModel.permalink }}" title="A link that holds the current player list. Excessively long URIs will probably be rejected by the server.">Editor Permalink</a>
+                        </h2>
+                        <table class="player-table" style="width: 100%; position: relative">
+                            <thead data-ng-show="viewModel.players.length > 0">
+                                <th></th>
+                                <th title="Attending"><input type="checkbox" data-ng-model="viewModel.areAllAttending" title="Are all players attending?"
+                                    /></th>
+                                <th>Seed</th>
+                                <th>Name</th>
+                                <th title="For highlighting purposes. Can for example be used to avoid specific people ending up in the same group.">
+                                    Color
+                                    <button data-ng-click="viewModel.editColors()">
+                                        <span class="ci-pencil"></span>
+                                    </button>
+                                </th>
+                                <th>Order</th>
+                                <th>Actions</th>
+                            </thead>
+                            <tbody class="drop-zone" dragula="'players'" dragula-model="viewModel.players">
+                                <tr data-ng-repeat="player in viewModel.players"
+                                    class="player-row"
+                                    data-ng-style="{ opacity: player.isAttending ? 1 : 0.5 }"
+                                    data-ng-class="{ highlighted: viewModel.focusedPlayer == player }">
+                                    <td style="width: 1%">
+                                        <span class="drag-handle ci-grip"></span>
+                                    </td>
+                                    <td style="width: 1%">
+                                        <input type="checkbox" data-ng-model="player.isAttending" title="Is this player attending?"/>
+                                    </td>
+                                    <td style="width: 1%; text-align: right">
+                                        {{ viewModel.seed(player) }}
+                                    </td>
+                                    <td>
+                                        <input style="width: 100%; box-sizing: border-box" data-ng-model="player.name"
+                                               data-util-auto-focus="player.autofocus"
+                                               data-util-select-on-focus
+                                               data-ng-focus="viewModel.focusedPlayer = player"
+                                               data-ng-keydown="viewModel.playerKeyDown(player, $event)"
+                                               title="Arrow Up/Down: Navigate between players.&#10;Ctrl + Arrow Up/Down: Move player.&#10;Ctrl + Delete: Remove player.&#10;Ctrl + Space: Toggle player.&#10;&#10;Return behaves like arrow down.&#10;If arrow down is pressed on the last player a new player is added."/>
+                                    </td>
+                                    <td>
+                                        <select class="flex-star"
+                                                style="width: 100%"
+                                                data-ng-model="player.highlighting"
+                                                data-ng-style="{ color: player.highlighting }">
+                                            <option data-ng-repeat="c in viewModel.highlightingColors"
+                                                    data-ng-style="{ color: c.value }"
+                                                    value="{{ c.value }}">
+                                                {{ :: c.label }}
+                                            </option>
+                                            <option data-ng-if="viewModel.highlightingColorExists(player.highlighting) == false"
+                                                    data-ng-style="{ color: c.value }"
+                                                    value="{{ player.highlighting }}">
+                                                {{ player.highlighting }}
+                                            </option>
+                                        </select>
+                                    </td>
+                                    <td class="order">
+                                        <div class="flex-container" style="width: 100%; box-sizing: border-box">
+                                            <button class="flex-star" data-ng-disabled="viewModel.players.indexOf(player) == 0" data-ng-click="viewModel.players.moveUp(player)">
+                                            ▲
+                                        </button>
+                                            <button class="flex-star" data-ng-disabled="viewModel.players.indexOf(player) == viewModel.players.length - 1" data-ng-click="viewModel.players.moveDown(player)">
+                                            ▼
+                                        </button>
+                                        </div>
+                                    </td>
+                                    <td style="text-align: center; width: 1%">
+                                        <button data-ng-click="viewModel.players.remove(player)">
+                                            <span class="ci-delete"></span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>
+                                    <button style="width: 100%" data-ng-click="viewModel.addPlayer()" accesskey="P" title="Add a new player. (Shift+Alt+P)">
+                                        + <span style="text-decoration: underline">P</span>layer
+                                    </button>
+                                </td>
+                            </tbody>
+                        </table>
+                        <div class="pad">
+                            <h3>Actions</h3>
+                            <div class="pad">
+                                <button data-ng-click="viewModel.reset()" title="This resets the player list and clears the URL. The locally saved version is reset as well.">Reset</button>
+                                <button data-ng-click="viewModel.clear()" title="Clears the player list. Retains local list and URL.">Clear</button>
+                            </div>
+                        </div>
+                        <div class="pad">
+                            <h2>Seeding Settings
+                                <util-info-button>
+                                    The players per group setting is tied to the first phase of the tournament and is only relevant for tournaments with more than one phase.
+                                </util-info-button>
+                            </h2>
+                            <div class="pad">
+                                <table>
+                                    <tr>
+                                        <td>
+                                            <label for="input-players-per-group">Players per Group:</label>
+                                        </td>
+                                        <td>
+                                            <input id="input-players-per-group" type="number"
+                                                    data-ng-disabled="viewModel.tournamentPhases[0].isPrelim == false"
+                                                    data-ng-model="viewModel.tournamentPhases[0].playersPerGroup" min="1" />
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="pad">
+                            <h2>File
+                                <util-info-button>
+                                    Save/load a player list to/from file. The player list is encoded in <a href="https://en.wikipedia.org/wiki/JSON">JSON</a>, and can be edited independently in a text editor as well.
+                                </util-info-button>
+                            </h2>
+                            <div class="pad">
+                                <button data-ng-click="viewModel.save()" title="Save the player list and API key if present to a file.">Save</button>
+                                <button data-util-proxy-click="#load" title="Load a player list and API key if present from a file.">Load</button>
+                                <input id="load" type="file" accept=".json, text/plain, application/json" style="display: none" data-util-change="viewModel.load($event)"
+                                />
+                            </div>
+                        </div>
+                        <div class="pad">
+                            <h2>Default Player List
+                                <util-info-button>
+                                    Concerns the browser storage only. If you want to make sure the list is not lost, save it as a file instead.
+                                </util-info-button>
+                            </h2>
+                            <div class="pad">
+                                <button data-ng-click="viewModel.savePlayersLocally()" title="Overwrite default list.">Save</button>
+                                <button data-ng-click="viewModel.loadPlayersLocally()" title="Load default list.">Load</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-star flex-container column stretch-items" style="flex-basis: 50%; padding: 10px">
+                        <h2 class="flex-constant">
+                            Result
+                            <util-info-button>
+                                This can be pasted into the bulk add field on Challonge, or you can use the Challonge section below to create an event using this list.<br/>
+                                <br/>
+                                Click a player to highlight in player list and edit the name. Drag the handle to re-order players. Changes to the order will be reset if the player list or seeding settings are changed! (Relevant player list changes are: Player attendance, ordering and additions/deletions.)<br/>
+                                <br/>
+                                Note that the correct number of players per group will not be guaranteed if manual changes are made. The grouping displayed is irrelevant to Challonge which just groups players in order of appearance by number of players per group.
+                            </util-info-button>
+                            <button class="flex-constant" data-ng-click="viewModel.copyResult()">Copy</button>
+                        </h2>
+                        <div class="groups-preview flex-star flex-container column" readonly="readonly">
+                            <div class="flex-constant" style="margin: 5px"
+                                 data-ng-repeat="group in viewModel.groups"
+                                 dragula="'group-players'" dragula-model="group">
+                                <div data-ng-repeat="player in group"
+                                     class="player flex-container center-items"
+                                     data-ng-class="{ highlighted: viewModel.focusedPlayer == player }"
+                                     data-ng-click="viewModel.focusedPlayer = player">
+                                    <span class="drag-handle ci-grip"></span>
+                                    <span class="name"
+                                          data-ng-style="{ 'color': player.highlighting }"
+                                          contenteditable="true" data-strip-br="true" data-strip-tags="true" data-select-non-editable="true" data-no-line-breaks="true"
+                                          data-ng-model="player.name">
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </expander-body>
+        </util-expander>
+        <util-expander is-open-storage-key="challonge">
+            <expander-header>
+                <h1>Challonge
+                    <util-info-button>
+                        Here you can connect your Challonge account and directly create and manage tournaments to some degree. Use this feature at your own risk as existing tournaments can be modified and deleted via the API.<br/>
+                        <br/>
+                        <h1>Security Concerns</h1>
+                        The API key is stored locally and could be accessed by scripts running on websites hosted on the same domain, so if you access other content on this server be mindful of this and consider deleting the key first.<br/>
+                        The key is also transmitted to the server currently hosting this utility, though encrypted the traffic could theoretically be logged by malicious administrators.
+                    </util-info-button>
+                </h1>
+            </expander-header>
+            <expander-body>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <label for="input-api-key">Challonge API Key:</label>
+                            </td>
+                            <td>
+                                <input id="input-api-key" data-ng-attr-type="{{ apiFocused ? 'text' : 'password' }}" data-ng-model="viewModel.apiKey" data-ng-model-options="{ debounce: 300 }"
+                                    title="Using the API key allows you to interface with Challonge." data-ng-focus="apiFocused = true" data-ng-readonly="viewModel.seenDisclaimer == false"
+                                    data-ng-blur="apiFocused = false" data-ng-change="viewModel.getTournaments()" data-ng-class="{ invalid: viewModel.apiKeyValid == false }"
+                                />
+                                <span data-ng-show="viewModel.apiKeyValid" class="checkmark">✓</span>
+                                <a href="https://challonge.com/settings/developer" target="_blank">Get Yours</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <util-expander data-ng-show="viewModel.apiEnabled" is-open-storage-key="tournament-new">
+                    <expander-header>
+                        <h2>New Tournament
+                            <util-info-button>
+                                This section can be used to directly create a tournament from the previous player list. Group seeding will only be applied if a preliminary phase is configured.<br/>
+                                <br/>
+                                Most if not all of the settings can be modified on Challonge before the tournament is started.
+                            </util-info-button>
+                        </h2>
+                    </expander-header>
+                    <expander-body>
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <label for="input-tournament-name">Name:</label>
+                                    </td>
+                                    <td>
+                                        <input id="input-tournament-name" type="text" data-ng-model="viewModel.tournamentName" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label for="input-tournament-id">ID:</label>
+                                    </td>
+                                    <td>
+                                        <input id="input-tournament-id" type="text" data-ng-model="viewModel.tournamentID" data-ng-model-options="{ debounce: 300 }"
+                                            data-ng-class="{ invalid: viewModel.tournamentIDCheckResult.valid == false }" title="The part of the URL (http://challonge.com/&lt;ID&gt;). The ID has to be unique (not in use already)!" />
+                                    </td>
+                                    <td>
+                                        <span data-ng-show="viewModel.tournamentIDCheckResult.valid == true" class="checkmark">✓</span>
+                                        <span data-ng-show="viewModel.tournamentIDCheckResult.valid != true">{{ viewModel.tournamentIDCheckResult.message }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label for="input-tournament-game">Game:</label>
+                                    </td>
+                                    <td>
+                                        <input id="input-tournament-game" type="text" data-ng-model="viewModel.tournamentGameName" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label title="Additional tournament admins that can enter results and the like.">Admins:</label>
+                                    </td>
+                                    <td>
+                                        <span data-ng-if="viewModel.tournamentAdmins.length == 0">None</span>
+                                        <table style="width: 100%">
+                                            <tr data-ng-repeat="admin in viewModel.tournamentAdmins track by $index">
+                                                <td>
+                                                    {{ admin.name }}
+                                                </td>
+                                                <td style="width: 1%">
+                                                    <button data-ng-click="viewModel.tournamentAdmins.removeAt($index); viewModel.saveAdmins()">
+                                                        <span class="ci-delete"></span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td data-util-focus="viewModel.userSearchFocused=true" data-util-blur="viewModel.userSearchFocused=false" style="position: relative">
+                                        <input id="input-user-search" data-ng-model="viewModel.challongeUserNameSearch" data-ng-model-options="{ debounce: 300 }"
+                                            placeholder="Search for users..." />
+                                        <div class="popup" data-ng-show="viewModel.challongeUserNameSearchResults.length > 0 &amp;&amp; viewModel.userSearchFocused">
+                                            <button class="popup-button" data-ng-repeat="user in viewModel.challongeUserNameSearchResults" data-ng-click="viewModel.addAdmin(user); viewModel.saveAdmins()"
+                                                title="Add {{ :: user.name }} to admins.">{{ :: user.name }}</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <util-expander is-open-storage-key="tournament-phases">
+                            <expander-header>
+                                <h3>Phases
+                                    <util-info-button>
+                                        The phase configurations for the tournament, each phase has a given number of players advancing to the next phase. Challonge currently only supports up to two phases.
+                                    </util-info-button>
+                                </h3>
+                            </expander-header>
+                            <expander-body>
+                                <div class="flex-container wrap">
+                                    <div class="tournament-phase-settings center-border-animation flex-shrink-only overflow-auto"
+                                         data-ng-repeat="phase in viewModel.tournamentPhases">
+                                        <div class="tournament-phase-header flex-container">
+                                            <div class="flex-star">
+                                                Phase {{ $index + 1 }}
+                                            </div>
+                                            <button class="flex-constant" data-ng-click="viewModel.tournamentPhases.remove(phase)"
+                                                    title="Remove this phase.">
+                                                <span class="ci-delete"></span>
+                                            </button>
+                                        </div>
+                                        <table class="tournament-phase-body">
+                                            <tr>
+                                                <td>
+                                                    <label data-ng-attr-for="select-phase-type{{$index}}">Type:</label>
+                                                </td>
+                                                <td>
+                                                    <select data-ng-attr-id="select-phase-type{{$index}}"
+                                                            data-ng-class="{ invalid: phase.typeValid == false }"
+                                                            style="width: 100%"
+                                                            data-ng-model="phase.type" data-util-model-type-int
+                                                            title="The type of the tournament. Swiss is not an option for preliminary phases.">
+                                                        <option data-ng-repeat="o in :: $root.TournamentTypeArray"
+                                                                value="{{ :: $index }}" label="{{ :: viewModel.pascalCaseSpacify(o) }}"/>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            <tbody data-ng-if="phase.isPrelim">
+                                                <tr>
+                                                    <td>
+                                                        <label for="input-players-per-group{{$index}}">Players per Group:</label>
+                                                    </td>
+                                                    <td>
+                                                        <input id="input-players-per-group{{$index}}" type="number"
+                                                               data-ng-model="phase.playersPerGroup" min="1"
+                                                               style="width: 100%"/>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <label for="input-tournament-advances-per-group{{$index}}">Advancing Players per Group:</label>
+                                                    </td>
+                                                    <td>
+                                                        <input id="input-tournament-advances-per-group{{$index}}" type="number"
+                                                               data-ng-model="phase.playersAdvancingPerGroup"
+                                                               min="1" data-ng-attr-max="{{ phase.playersPerGroup }}"
+                                                               data-ng-class="{ invalid: phase.playersAdvancingPerGroupValid == false }"
+                                                               title="The number of advancing players. Has to be a power of two for single/double elimination."
+                                                               style="width: 100%"/>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                            <tbody data-ng-if="phase.isPrelim == false &amp;&amp; phase.type == $root.TournamentType.SingleElimination">
+                                                <tr>
+                                                    <td>
+                                                        <label for="input-tournament-3rd-place-match{{$index}}">Match for 3rd Place:</label>
+                                                    </td>
+                                                    <td>
+                                                        <input id="input-tournament-3rd-place-match{{$index}}" type="checkbox"
+                                                               data-ng-model="phase.matchForThirdPlace"/>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <button data-ng-disabled="viewModel.tournamentPhases.length >= 2"
+                                        data-ng-click="viewModel.tournamentPhasesAddNew()">+ Phase</button>
+                            </expander-body>
+                        </util-expander>
+                        <div data-ng-show="viewModel.apiEnabled">
+                            <button data-ng-click="viewModel.createTournament()" data-ng-disabled="viewModel.tournamentIsValid == false">Create Tournament</button>
+                        </div>
+                    </expander-body>
+                </util-expander>
+                <util-expander data-ng-show="viewModel.apiEnabled" is-open-default="false" is-open-storage-key="tournaments">
+                    <expander-header>
+                        <h2>Tournaments
+                            <util-info-button>
+                                This section lists all tournaments that the user is an administrator or owner of. Any tournament can be added via the input at the bottom for a more compact view of the matches in the tournament details section. Clicking a tournament name will select it in the details section.<br/>
+                                <br/>
+                                Certain actions are only available to tournament owners, attempting to execute them will cause an error and nothing will happen.
+                            </util-info-button>
+                            <button data-ng-click="viewModel.getTournaments(); $event.stopPropagation()">Update</button>
+                            <span data-ng-if="viewModel.userTournamentsLoading" class="loading-indicator text-size">
+                                <util-inline-file path="'./icons/misc/loading.svg'"></util-inline-file>
+                            </span>
+                        </h2>
+                    </expander-header>
+                    <expander-body>
+                        <span data-ng-if="viewModel.userTournaments.length == 0">No tournaments created/loaded yet.</span>
+                        <table class="tournament-table overflow-auto" data-ng-show="viewModel.userTournaments.length > 0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Groups</th>
+                                    <th>Final</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="tournament-row" data-ng-repeat="tournament in viewModel.userTournaments track by tournament.id" data-ng-class="{ selected: viewModel.selectedUserTournamentID == tournament.id }">
+                                    <td>
+                                        <a class="no-decoration" target="_blank" data-ng-attr-href="{{ :: tournament.full_challonge_url }}">
+                                            <span class="ci-ext-link"></span> 
+                                        </a>
+                                        <span class="name" title="Click to select." data-ng-click="viewModel.selectedUserTournamentID = tournament.id">{{ :: tournament.name }}</span>
+                                    </td>
+                                    <td>
+                                        <div data-ng-if="tournament.group_stages_enabled">
+                                            <a target="_blank" data-ng-attr-href="{{ :: tournament.full_challonge_url }}/groups">Groups</a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a target="_blank" data-ng-attr-href="{{ :: tournament.full_challonge_url }}/bracket">{{ :: viewModel.finalStageString(tournament) }}</a>
+                                    </td>
+                                    <td style="text-align: center">
+                                        <button data-ng-click="viewModel.openTournamentSettings(tournament)">
+                                            <span class="ci-settings"></span>
+                                        </button>
+                                        <button data-ng-click="viewModel.deleteTournament(tournament)" style="margin-left: 10px" title="Deletes the tournament from Challonge. This action is permanent.">
+                                            <span class="ci-delete"></span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div style="padding: 10px">
+                            <label>
+                                Load from:
+                                <input class="wide" type="url" data-ng-model="viewModel.loadTournamentUrl"
+                                       placeholder="e.g. http://challonge.com/single_elim"/>
+                            </label>
+                            <button data-ng-disabled="viewModel.loadTournamentUrl.trim() == ''" data-ng-click="viewModel.loadTournamentFromUrl()">
+                                Add
+                            </button>
+                        </div>
+                    </expander-body>
+                </util-expander>
+                <util-expander data-ng-if="viewModel.apiEnabled &amp;&amp; viewModel.userTournaments.length > 0" is-open-storage-key="tournament-details">
+                    <expander-header>
+                        <h2>Tournament Details
+                            <util-info-button>
+                                In this section various actions regarding a specific tournament can be taken and matches can be viewed and (if authorized) edited.<br/>
+                                <br/>
+                                Some actions are unfortunately not supported by the Challonge API, e.g. starting/ending the group stage is only possible via the official website.<br/>
+                                Certain functions only become available in certain stages of the tournament. To be able to load the non-advancing players (to create an "amateur bracket") the group stage not only has to have been ended but also the final phase has to have been started already. Also, matches may already be displayed in Challonge but they are only accessible once a given tournament phase is actually started.<br/>
+                                <br/>
+                                As there is no efficient update stream for match change events the matches list does not update automatically. Use the update button next to the tournament selection input to refresh the matches list and tournament state as necessary.
+                            </util-info-button>
+                        </h2>
+                    </expander-header>
+                    <expander-body>
+                        <label>
+                            Tournament:
+                            <select data-ng-model="viewModel.selectedUserTournamentID" data-util-model-type-int>
+                                <option data-ng-repeat="t in viewModel.userTournaments" value="{{ :: t.id }}" label="{{ :: t.name }}"></option>
+                            </select>
+                            <button data-ng-if="viewModel.selectedUserTournament != null" data-ng-click="viewModel.updateCompleteTournament(viewModel.selectedUserTournament)">Update</button>
+                            <span data-ng-if="viewModel.selectedUserTournamentLoading"
+                                  class="loading-indicator text-size">
+                                <util-inline-file path="'./icons/misc/loading.svg'"></util-inline-file>
+                            </span>
+                        </label>
+                        <div style="margin-top: 10px">
+                            <div data-ng-if="viewModel.selectedUserTournament == null">
+                                No tournament selected.
+                            </div>
+                            <div data-ng-if="viewModel.selectedUserTournament != null">
+                                <div>
+                                    <h3>Links</h3>
+                                    <div class="pad">
+                                        <a target="_blank" data-ng-if="viewModel.selectedUserTournament.group_stages_enabled"
+                                            data-ng-attr-href="{{ viewModel.selectedUserTournament.full_challonge_url }}/groups">Groups</a>
+                                        <a target="_blank" data-ng-attr-href="{{ viewModel.selectedUserTournament.full_challonge_url }}/bracket">
+                                            {{ viewModel.finalStageString(viewModel.selectedUserTournament) }}</a>
+                                        <a target="_blank" data-ng-attr-href="{{ viewModel.selectedUserTournament.full_challonge_url }}/settings">
+                                            Settings</a>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3>Utilities</h3>
+                                    <div class="pad">
+                                        <button data-ng-click="viewModel.loadPlayers(viewModel.selectedUserTournament)"
+                                                title="Loads the player list of this tournament into the utility's player list.">
+                                            Load Player List
+                                        </button>
+                                        <button data-ng-if="viewModel.canLoadAmateurPlayers(viewModel.selectedUserTournament)" data-ng-click="viewModel.loadAmateurPlayers(viewModel.selectedUserTournament)"
+                                                title="Loads the list of players that did not advance from the group stage of this tournament into the utility's player list.">
+                                            Load Non-Advancing Player List
+                                        </button>
+                                        <button data-ng-if="viewModel.canEliminateByes(viewModel.selectedUserTournament)" data-ng-click="viewModel.eliminateByes(viewModel.selectedUserTournament)"
+                                                title="Automatically enters scores for matches in which one of the participants is a 'bye'. Note that if both players are byes the match cannot be fully submitted because the tie function of the Challonge API is buggy.
+Players identified as 'bye' have a greyed out name. Use at your own risk as this can potentially overwrite scores.">
+                                            Eliminate Byes
+                                        </button>
+                                        <button data-ng-if="viewModel.canStartBracket(viewModel.selectedUserTournament)"
+                                                data-ng-click="viewModel.startTournament(viewModel.selectedUserTournament)"
+                                                title="Start final phase of the tournament.">
+                                            Start Tournament (Final Phase)
+                                        </button>
+                                        <button data-ng-if="viewModel.selectedUserTournament.state == 'awaiting_review'"
+                                                data-ng-click="viewModel.finalizeTournament(viewModel.selectedUserTournament)"
+                                                title="End the tournament.">
+                                            End Tournament
+                                        </button>
+                                        <button data-ng-click="viewModel.deleteTournament(viewModel.selectedUserTournament)"
+                                                title="Deletes the tournament from Challonge. This action is permanent.">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div data-ng-if="viewModel.selectedUserTournament.matches == null || viewModel.selectedUserTournament.matches.length == 0">
+                                    No set matches in this tournament yet.
+                                </div>
+                                <div data-ng-if="viewModel.selectedUserTournament.matches.length > 0">
+                                    <div style="margin: 5px">
+                                        <label>
+                                            Filter by Player:
+                                            <select data-ng-model="viewModel.matchPlayerFilter"
+                                            data-ng-model-options="{ debounce: 300 }">
+                                                <option value="">&lt;All&gt;</option>
+                                                <option data-ng-repeat="p in viewModel.selectedUserTournament.participants|filter:{ is_bye: false }|orderBy:'name'">{{ :: p.name }}</option>
+                                            </select>
+                                            <button data-ng-click="viewModel.matchPlayerFilter = ''"
+                                                    data-ng-show="viewModel.matchPlayerFilter != ''">
+                                                <span class="ci-delete"></span>
+                                            </button>
+                                        </label>
+                                    </div>
+                                    <div class="match-batches-container flex-container wrap">
+                                        <div class="match-batch flex-shrink-only overflow-auto center-border-animation flex-container column"
+                                            data-ng-repeat="group in viewModel.selectedUserTournament.matchGroups">
+                                            <h3 class="header flex-constant">{{ group.header }}</h3>
+                                            <table class="match-table flex-star">
+                                                <tr class="match-row" data-ng-class="{ editable: match.canEdit, 'missing-results': match.winner_id == null }" data-ng-repeat="match in filteredMatches = (group.values | filter:viewModel.filterMatches) track by match.id">
+                                                    <td>
+                                                        <button class="player" data-ng-class="{
+                                                                'is-bye': match.player1.is_bye,
+                                                                winner: match.winner_id != null &amp;&amp; match.winner_id == match.player1_id,
+                                                                highlighted: match.player1.highlighted
+                                                            }" data-ng-mouseenter="viewModel.participantHighlight(match.player1, true)"
+                                                            data-ng-mouseleave="viewModel.participantHighlight(match.player1, false)"
+                                                            data-ng-click="viewModel.submitMatch(match, match.player1)"
+                                                            data-ng-attr-title="{{ match.canEdit ? 'Select as winner.' : null }}"
+                                                            data-context-menu="./app/templates/player-menu.html" data-util-context-menu-data="{
+                                                                viewModel: viewModel,
+                                                                player: match.player1
+                                                            }">
+                                                            {{ match.player1.name }}
+                                                        </button>
+                                                    </td>
+                                                    <td>
+                                                        <input class="score" type="number" data-ng-readonly="match.canEdit == false" data-ng-model="match.scores[0].score1"
+                                                            data-ng-model-options="{ debounce: 500 }"
+                                                            data-ng-change="viewModel.submitMatch(match)" />
+                                                    </td>
+                                                    <td>
+                                                        <button class="tie" data-ng-class="{
+                                                                winner: match.winner_id == null &amp;&amp; match.state == 'complete'
+                                                            }"
+                                                            data-ng-click="viewModel.submitMatch(match, 'tie')">
+                                                            :
+                                                        </button></td>
+                                                    <td>
+                                                        <input class="score" type="number" data-ng-readonly="match.canEdit == false" data-ng-model="match.scores[0].score2"
+                                                            data-ng-model-options="{ debounce: 500 }"
+                                                            data-ng-change="viewModel.submitMatch(match)" />
+                                                    </td>
+                                                    <td>
+                                                        <button class="player" data-ng-class="{
+                                                                'is-bye': match.player2.is_bye,
+                                                                winner: match.winner_id != null &amp;&amp; match.winner_id == match.player2_id,
+                                                                highlighted: match.player2.highlighted
+                                                            }" data-ng-mouseenter="viewModel.participantHighlight(match.player2, true)"
+                                                            data-ng-mouseleave="viewModel.participantHighlight(match.player2, false)"
+                                                            data-ng-click="viewModel.submitMatch(match, match.player2)"
+                                                            data-ng-attr-title="{{ match.canEdit ? 'Select as winner.' : null }}"
+                                                            data-context-menu="./app/templates/player-menu.html" data-util-context-menu-data="{
+                                                                viewModel: viewModel,
+                                                                player: match.player2
+                                                            }">
+                                                            {{ match.player2.name }}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="text-align: center"
+                                                        data-ng-if="filteredMatches.length == 0">
+                                                        ---
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </expander-body>
+                </util-expander>
+            </expander-body>
+        </util-expander>
+        <util-expander data-is-open-default="false" is-open-storage-key="features">
+            <expander-header>
+                <h1>Global Functions</h1>
+            </expander-header>
+            <expander-body>
+                <ul>
+                    <li>
+                        <label>
+                            Clear all saved/cached data:
+                            <button data-ng-click="viewModel.clearLocalStorage()">Clear Local Storage</button>
+                        </label>
+                    </li>
+                </ul>
+            </expander-body>
+        </util-expander>
+    </div>
+</body>
+
+</html>

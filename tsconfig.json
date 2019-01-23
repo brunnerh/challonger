@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+		"baseUrl": ".",
+        "paths": { "*": ["typings/*"] },
+        "lib": ["dom", "es2015", "es2015.promise"],
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "target": "es6",
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "sourceMap": true,
+        "experimentalDecorators": true,
+        "strict": true,
+    }
+}

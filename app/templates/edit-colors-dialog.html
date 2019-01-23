@@ -1,0 +1,48 @@
+<div>
+	<table>
+		<thead>
+			<tr>
+				<th></th>
+				<th>Name</th>
+				<th>Value</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody dragula="'colors'" dragula-model="viewModel">
+			<tr data-ng-repeat="color in viewModel">
+				<td>
+					<span class="ci-grip drag-handle"></span>
+				</td>
+				<td>
+					<input data-ng-model="color.label"/>
+				</td>
+				<td>
+					<div class="flex-container">
+						<input data-ng-model="color.value"/>
+						<label>
+							<span class="clickable"
+							      style="width: 1em; height: 1em; margin: 3px; display: inline-block"
+							      data-ng-style="{ 'background-color': color.value }"/>
+							<input style="display: none" type="color" style="border: none; padding: 0; margin: 0"
+								data-ng-model="color.value"/>
+						</label>
+					</div>
+				</td>
+				<td style="text-align: center">
+					<button data-ng-click="viewModel.remove(color)">
+						<span class="ci-delete"></span>
+					</button>
+				</td>
+			</tr>
+		</tbody>
+		<tbody>
+			<tr>
+				<td>
+				</td>
+				<td colspan="2">
+					<button style="width: 100%" data-ng-click="viewModel.push({ label: 'New Color', value: 'white' })">+</button>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>

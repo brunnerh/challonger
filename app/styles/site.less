@@ -1,0 +1,860 @@
+@foreground: white;
+@background: #222;
+@disabled: grey;
+@highlight-hue: 60;
+@highlight: hsl(@highlight-hue, 100%, 50%);
+@info-hue: 203;
+@info: hsl(@info-hue, 100%, 50%);
+@link: hsl(270, 100%, 80%);
+@selection-background: fade(@foreground, 10%);
+@dim-selection-background: fade(@foreground, 5%);
+@invalid-hue: 0;
+@invalid: hsl(@invalid-hue, 100%, 50%);
+@valid: lime;
+@standard-animation-length: 0.3s;
+@standard-transition: all linear @standard-animation-length;
+
+html
+{
+  background: @background;
+  color: @foreground;
+}
+
+::selection
+{
+  background: @highlight;
+  color: @background;
+}
+
+h1
+{
+  font-size: larger;
+  font-weight: bolder;
+  margin: 5px;
+  padding: 0;
+}
+h2, h3, h4, h5, h6
+{
+  font-size: 1em;
+  font-weight: bold;
+  margin: 3px;
+  padding: 0;
+}
+
+.drag-handle
+{
+  cursor: move;
+}
+svg.drag-handle
+{
+  display: block;
+  width: 1em;
+  height: 1em;
+
+  &.inline
+  {
+    display: inline-block;
+  }
+}
+
+a
+{
+  color: @link;
+  transition: @standard-transition;
+  text-decoration: none;
+  &:visited
+  {
+    color: darken(@link, 10%, relative);
+  }
+  &:focus, &:hover
+  {
+    color: lighten(@link, 50%, relative);
+  }
+}
+
+
+select,
+textarea,
+button,
+input
+{
+  color: @foreground;
+  background: lighten(@background, 40%, relative);
+  border: 1px solid transparent;
+  outline: none;
+  transition: @standard-transition;
+  padding: 3px;
+  box-sizing: border-box;
+  
+  &.invalid
+  {
+    border: 1px solid @invalid;
+  }
+  &.valid
+  {
+    border: 1px solid @valid;
+  }
+
+  &:not([readonly]):not(:disabled)
+  {
+    &:focus, &:hover
+    {
+      color: @highlight;
+      outline: none;
+    }
+  }
+
+  &.wide
+  {
+    width: 300px;
+  }
+  
+  &:disabled
+  {
+    color: @disabled;
+  }
+}
+
+textarea,
+input:not([type=submit]),
+input:not([type=reset]),
+input:not([type=button])
+{
+  &:read-only
+  {
+    border: 1px solid lighten(@background, 40%, relative);
+    background: transparent;
+  }
+}
+
+button
+{
+  background: lighten(@background, 70%, relative);
+}
+
+input[type=submit],
+input[type=reset],
+input[type=button],
+button
+{
+  &:not(:disabled)
+  {
+    cursor: pointer;
+  }
+}
+
+.gu-mirror
+{
+  z-index: 100000;
+  select
+  {
+    // Hide select value during drag (wrong angular context)
+    color: transparent;
+  }
+}
+
+.expander
+{
+  position: relative;
+  border-style: solid;
+  border-width: 0;
+  border-left-width: 1px;
+  border-left-color: fade(@foreground, 20%);
+  margin: 5px;
+  padding: 5px;
+  transition: @standard-transition;
+
+  &::before
+  {
+    content: '';
+    position: absolute;
+    height: 100%;
+    left: 0;
+    top: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    width: 1px;
+    transition: @standard-transition;
+    box-shadow: 0px 0px 0px 0px fade(@foreground, 100%);
+  }
+
+  &.open
+  {
+    border-left-color: @foreground;
+
+    &::before
+    {
+      box-shadow: 0px 0px 8px 0px @foreground;
+    }
+
+    & > .expander-header-container
+    {
+      opacity: 1;
+      text-shadow: 0 0 1em fade(@foreground, 25%);
+    }
+  
+    & > .expander-body-container
+    {
+      overflow: visible;
+
+      & > .expander-body
+      {
+        margin-top: 0;
+        opacity: 1;
+        transition: margin-top ease-in-out @standard-animation-length,
+                    opacity @standard-animation-length ease-in-out @standard-animation-length;
+      }
+    }
+
+    // Overflow only needs to be visible when fully opened for the admin popup.
+    &.open-add, &.open-remove
+    {
+      & > .expander-body-container
+      {
+        overflow: hidden;
+      }
+    }
+  }
+
+  & > .expander-header-container
+  {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    opacity: 0.5;
+    text-shadow: 0 0 0 fade(@foreground, 0%);
+    transition: @standard-transition;
+
+    .expander-toggle-button
+    {
+      font-weight: bold;
+      flex: 0 0 auto;
+      width: 2em;
+      height: 2em;
+      margin: 3px;
+      background: none;
+      box-sizing: border-box;
+      transition: @standard-transition;
+      
+      &.open
+      {
+        transform: rotate(90deg);
+      }
+    }
+    .expander-header
+    {
+      display: inline-block;
+      flex: 0 1 auto;
+      cursor: pointer;
+    }
+  }
+
+  & > .expander-body-container
+  {
+    overflow: hidden;
+    
+    & > .expander-body
+    {
+      transition: opacity ease-in-out @standard-animation-length,
+                  margin-top @standard-animation-length ease-in-out @standard-animation-length;
+      margin-top: -100%;
+      opacity: 0;
+      padding: 5px;
+    }
+  }
+}
+
+util-info-button
+{
+  .info-button
+  {
+    color: fade(@foreground, 50%);
+    display: inline-block;
+    background: transparent;
+    width: 1em;
+    box-sizing: content-box;
+    border-radius: 50%;
+
+    &:hover, &:focus
+    {
+      color: @background !important;
+      background: @info !important;
+    }
+  }
+}
+
+[contenteditable=true]
+{
+  cursor: text;
+}
+
+@keyframes position-abs-to-unset
+{
+  from { position: absolute; }
+  to { position: unset; }
+}
+@keyframes fade-in
+{
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+@keyframes fade-out
+{
+  from { opacity: 1 }
+  to { opacity: 0 }
+}
+
+[ng-animate-swap],
+[data-ng-animate-swap]
+{
+  transition: @standard-transition;
+  
+  &.ng-enter
+  {
+    opacity: 0;
+    position: absolute;
+    animation: 0.3 position-abs-to-unset, 0.3 ease-in-out 0.3s fade-in;
+  }
+  &.ng-leave
+  {
+    opacity: 1;
+  }
+  &.ng-leave-active
+  {
+    opacity: 0;
+  }
+}
+
+.shadow(@hue: @highlight-hue)
+{
+  box-shadow: 0 3px 10px 0 hsla(@hue, 100%, 50%, 1);
+}
+
+.message-box-container
+{
+  position: fixed;
+  padding-top: 10px;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: 100%;
+  pointer-events: none;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+
+  & > *
+  {
+    pointer-events: auto;
+  }
+}
+
+@keyframes rainbow-shadow
+{
+  0% { .shadow(0); }
+  16.66% { .shadow(60); }
+  33.33% { .shadow(120); }
+  50.00% { .shadow(180); }
+  66.66% { .shadow(240); }
+  83.33% { .shadow(300); }
+  100% { .shadow(360); }
+}
+
+.message-box
+{
+  padding: 5px;
+  position: relative;
+  display: flex;
+  background: #333; // TODO: background mod
+  color: @foreground;
+  align-items: stretch;
+  border: none;
+  max-width: 75%;
+  max-height: 75%;
+  transition: @standard-transition;
+  opacity: 1;
+  .shadow;
+
+  &.enter, &.leave
+  {
+    opacity: 0;
+  }
+
+  &.buttons-layout-dialog
+  {
+    flex-direction: column;
+
+    .buttons
+    {
+      margin-left: auto;
+    }
+  }
+
+  &.modal
+  {
+    background: @background;
+    border: 5px solid lighten(@background, 70%, relative);
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    box-sizing: border-box;
+  }
+  
+  &:not(:first-child)
+  {
+    margin-top:10px;
+  }
+  
+  .message
+  {
+    flex: 1 1 auto;
+    padding: 5px;
+    overflow-y: auto;
+  }
+  .buttons
+  {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    
+    .button
+    {
+      padding: 10px;
+      transition: @standard-transition;
+      background: transparent;
+      
+      &:hover, &:focus
+      {
+        background: #444; // TODO: background mod
+      }
+      
+      &:not(:first-child)
+      {
+        margin-left: 5px;
+      }
+    }
+  }
+  
+  &.error
+  {
+    .shadow(@invalid-hue);
+  }
+  &.warning
+  {
+    .shadow(30);
+  }
+  &.info-button-message
+  {
+    .shadow(@info-hue);
+  }
+  &.rainbow
+  {
+    animation: rainbow-shadow 1s linear 0s infinite;
+  }
+}
+
+.list-item:not(:first-child)
+{
+  margin-top: 5px;
+}
+
+.user-search-container > *
+{
+  margin: 5px;
+}
+
+
+.checkmark
+{
+  color: @valid;
+  font-weight: bold;
+}
+
+.text-size-svg
+{
+  width: 1em;
+  height: 1em;
+  color: inherit;
+}
+
+.popup
+{
+  z-index: 1000;
+  position: absolute;
+  background:#333; //TODO: background mod
+  padding: 5px;
+  width: 100%;
+  box-sizing: border-box;
+  transform: translateZ(0);
+  .shadow;
+  
+  .popup-button
+  {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 2px;
+    text-align: left;
+  }
+}
+
+.player-table
+{
+  border-collapse: collapse;
+
+  .player-row
+  {
+    transition: @standard-transition;
+
+    &.highlighted
+    {
+      background: @dim-selection-background;
+    }
+  }
+  
+}
+
+.no-decoration
+{
+  text-decoration: none;
+}
+
+.tournament-table
+{
+  border-collapse: collapse;
+  
+  .tournament-row
+  {
+    &.selected
+    {
+      background: @selection-background;
+    }
+    .name
+    {
+      cursor: pointer;
+    }
+  }  
+}
+
+.match-batches-container
+{
+  padding: 5px;
+  align-items: flex-start;
+  
+  .match-batch
+  {
+    margin: 5px;
+    padding: 5px;
+  }
+  
+  .header
+  {
+    text-align: center;
+    font-variant: small-caps;
+    border-bottom: 1px solid fade(@foreground, 50%);
+  }
+}
+
+.match-table
+{
+  border-collapse: collapse;
+  .match-row
+  {
+    &.editable:not(.missing-results)
+    {
+      opacity: 0.5;
+    }
+
+    &:not(.editable)
+    {
+      .player, .tie
+      {
+        cursor: default;
+      }
+    }
+    .player, .tie
+    {
+      width: 100%;
+      color: @foreground;
+      background: transparent;
+      
+      &:hover, &:focus
+      {
+        color: @foreground;
+      }
+      
+      &.is-bye
+      {
+        opacity: 0.5;
+      }
+      &.winner
+      {
+        color: @highlight;
+      }
+      &.highlighted
+      {
+        background: @selection-background;
+      }
+    }
+    
+    .score
+    {
+      border: none;
+      width: 3em;
+      text-align: center;
+      &[readonly]
+      {
+        background: transparent;
+      }
+    }
+  }
+}
+
+.loading-indicator
+{
+  color: @highlight;
+  
+  svg
+  {
+    width: 2em;
+    height: 2em; 
+  } 
+  
+  &.text-size
+  {
+    display: inline-block;
+    vertical-align: middle;
+    
+    svg
+    {
+      height: 1em;
+      width: 1em; 
+    }
+  }
+}
+
+@keyframes fade-out
+{
+  from { opacity: 1 }
+  to { opacity: 0 }
+}
+
+.animate
+{
+  &[ng-if],
+  &[data-ng-if],
+  &[ng-repeat],
+  &[data-ng-repeat]
+  {
+    transition: opacity ease-in-out @standard-animation-length;
+    
+    &.ng-leave,
+    &.ng-enter.ng-enter-active 
+    {
+      opacity: 1;
+    }
+    
+    &.ng-enter,
+    &.ng-leave.ng-leave-active
+    {
+      opacity:0;
+    }
+  }
+}
+
+.tournament-phase-settings
+{
+  padding: 10px;
+  margin: 5px;
+
+  .tournament-phase-header
+  {
+    font-weight: bold;
+    font-variant: small-caps;
+    text-align: center;
+    border-bottom: 1px solid fade(@foreground, 50%);
+
+    button:not(:hover):not(:focus)
+    {
+      background: none;
+    }
+  }
+  .tournament-phase-body
+  {
+    margin-top: 5px;
+  }
+}
+
+.overflow-auto
+{
+  overflow: auto;
+}
+
+.pad
+{
+  padding: 5px;
+}
+
+// Does not inherit
+.center-border-animation
+{
+  @border-width: 1px;
+  position: relative;
+
+  // Set up base styles, we're going to scale instead of animating width/height
+  &::before,
+  &::after
+  {
+    pointer-events: none;
+    box-sizing: border-box;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    transform-origin: center; // Ensure scaling is done from the center (expands outwards)
+    transition: @standard-transition;
+    opacity: 1;
+  }
+
+  &::before
+  {
+    border-top: @border-width solid @foreground;
+    border-bottom: @border-width solid @foreground;
+    transform: scaleX(0); // Shrink only width
+  }
+
+  &::after
+  {
+    border-left: @border-width solid @foreground;
+    border-right: @border-width solid @foreground;
+    transform: scaleY(0); // Shrink only height
+  }
+
+  &:hover // TODO: add focus-within
+  {
+    background: fade(@foreground, 2%);
+
+    &::before, &::after
+    {
+      opacity: 0.5;
+    }
+    &::before
+    {
+      transform: scaleX(1);
+    }
+    &::after
+    {
+      transform: scaleY(1);
+    }
+  }
+}
+
+@keyframes background
+{
+  from
+  {
+    color: @highlight;
+    border-color: @highlight;
+    opacity: 1;
+  }
+  to
+  {
+    color: @foreground;
+    border-color: @foreground;
+    opacity: 0.5;
+  }
+}
+
+.info
+{
+  padding: 10px;
+  font-weight: bold;
+  text-align: center;
+  color: @highlight;
+  border: 1px solid @highlight;
+  animation: background 0.3s ease-in-out 5s forwards;
+}
+
+.perspective-lift-container
+{
+  perspective: 10em;
+  perspective-origin: center;
+
+  &:hover > *
+  {
+    transform: translateZ(0.3em);
+  }
+  & > *
+  {
+    transition: @standard-transition;
+    &:hover
+    {
+      transform: translateZ(1em);
+    }
+  }
+}
+
+.align-middle
+{
+  vertical-align: middle;
+}
+
+.groups-preview
+{
+  .player
+  {
+    cursor: pointer;
+
+    &.highlighted
+    {
+      background: @dim-selection-background;
+    }
+
+    .name
+    {
+      transition: @standard-transition;
+    }
+  }
+}
+
+
+.context-menu
+{
+  background: lighten(@background, 20%, relative);
+  padding: 5px;
+  border: 2px solid @foreground;
+  
+  &.player-menu
+  {
+    position: absolute !important;
+  }
+
+  &.menu
+  {
+    button
+    {
+      text-align: left;
+    }
+  }
+
+  button
+  {
+    background: none;
+    width: 100%;
+    cursor: pointer;
+    transition: @standard-transition;
+
+    &:hover, &:active
+    {
+      background: black; //TODO: background mod
+      color: @highlight;
+    }
+  }
+}
+
+.clickable
+{
+  cursor: pointer;
+}

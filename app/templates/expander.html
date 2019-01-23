@@ -1,0 +1,12 @@
+<div class="expander" data-ng-class="{ open: ctrl.isOpen }">
+    <div class="expander-header-container">
+        <button class="expander-toggle-button" data-ng-click="ctrl.toggle()" data-ng-class="{ open: ctrl.isOpen }">
+			▶
+		</button>
+        <div class="expander-header" ng-transclude="header" data-ng-click="ctrl.toggle()"></div>
+    </div>
+    <div class="expander-body-container perspective-lift">
+        <div class="expander-body" data-ng-if="ctrl.isOpen" ng-transclude="body">
+        </div>
+    </div>
+</div>
